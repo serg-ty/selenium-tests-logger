@@ -1,2 +1,2 @@
 # selenium-tests-logger
-Example project how to use Chrome Dev Tools protocol in selenium and JUnit 5 for tests logging
+Example project how to use Chrome Dev Tools protocol in selenium 4 and JUnit 5 for tests logging
