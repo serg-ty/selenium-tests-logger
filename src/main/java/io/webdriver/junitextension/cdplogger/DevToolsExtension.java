@@ -45,6 +45,7 @@ public class DevToolsExtension implements BeforeTestExecutionCallback, AfterTest
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_RESET = "\u001B[0m";
     private DevTools devTools;
+    private String testMethodName;
     private String responseURLFilter;
 
     protected DevToolsExtension() {
@@ -54,6 +55,7 @@ public class DevToolsExtension implements BeforeTestExecutionCallback, AfterTest
     @Override
     public void beforeTestExecution(ExtensionContext context) throws Exception {
         TestInstances testInstances = context.getRequiredTestInstances();
+        this.testMethodName = context.getRequiredTestMethod().getName();
         try {
             Field driverField = testInstances.getInnermostInstance().getClass().getDeclaredField("driver");
             driverField.setAccessible(true);
@@ -97,7 +99,8 @@ public class DevToolsExtension implements BeforeTestExecutionCallback, AfterTest
 
         devTools.getDomains().events().addJavascriptExceptionListener(e ->
         {
-            logger.error(ANSI_GREEN + "Java script exception occurred : {}" + ANSI_RESET, e.getMessage());
+            logger.error(ANSI_GREEN + "[{}] : Java script exception occurred : {}" + ANSI_RESET,
+                    testMethodName, e.getMessage());
             e.printStackTrace();
         });
     }
@@ -108,12 +111,17 @@ public class DevToolsExtension implements BeforeTestExecutionCallback, AfterTest
                 {
                     Request request = entry.getRequest();
                     if (entry.getType().equals(Optional.of(ResourceType.FETCH))) {
-                        logger.info("[{}] Request with URL : {}",
-                                request.getMethod(),
-                                request.getUrl());
-
                         if (request.getPostData().isPresent()) {
-                            logger.info("\tWith body : {}", request.getPostData().get());
+                            logger.info("[{}] : [{}] Request with URL : {} : With body : {}",
+                                    testMethodName,
+                                    request.getMethod(),
+                                    request.getUrl(),
+                                    request.getPostData().get());
+                        } else {
+                            logger.info("[{}] : [{}] Request with URL : {}",
+                                    testMethodName,
+                                    request.getMethod(),
+                                    request.getUrl());
                         }
                     }
                 });
@@ -126,22 +134,18 @@ public class DevToolsExtension implements BeforeTestExecutionCallback, AfterTest
                     Response response = entry.getResponse();
                     if (entry.getType().equals(ResourceType.FETCH)
                             || entry.getType().equals(ResourceType.XHR)) {
-                        if (response.getStatus() >= 500
-                                || response.getStatus() == 400
-                                || response.getStatus() == 404) {
+                        if (response.getStatus() >= 400) {
                             logResponse(response, responseURLFilter,
-                                    log -> {
-                                        logger.error(ANSI_GREEN + "\tWith response URL : {}" + ANSI_RESET,
-                                                response.getUrl());
-                                        logger.error(ANSI_GREEN + "\tWith status code : {}" + ANSI_RESET,
-                                                response.getStatus());
-                                    });
+                                    log -> logger.error(ANSI_GREEN + "[{}] : Response with URL : {} : With status code : {}" + ANSI_RESET,
+                                            testMethodName,
+                                            response.getUrl(),
+                                            response.getStatus()));
                         } else {
                             logResponse(response, responseURLFilter,
-                                    log -> {
-                                        logger.info("\tWith response URL : {}", response.getUrl());
-                                        logger.info("\tWith status code : {}", response.getStatus());
-                                    });
+                                    log -> logger.info("[{}] : Response with URL : {} : With status code : {}",
+                                            testMethodName,
+                                            response.getUrl(),
+                                            response.getStatus()));
                         }
                     }
                 });
@@ -163,9 +167,13 @@ public class DevToolsExtension implements BeforeTestExecutionCallback, AfterTest
                 {
                     if (entry.getLevel().equals(LogEntry.Level.ERROR)) {
 
-                        logger.error(ANSI_GREEN + "[LOG.ERROR] Entry added with text: {}" + ANSI_RESET, entry.getText());
+                        logger.error(ANSI_GREEN + "[{} : LOG.ERROR] Entry added with text: {}" + ANSI_RESET,
+                                testMethodName,
+                                entry.getText());
                         if (entry.getStackTrace().isPresent()) {
-                            logger.error(ANSI_GREEN + "\tWith stack trace : {}" + ANSI_RESET, entry.getStackTrace().get());
+                            logger.error(ANSI_GREEN + "[{} : LOG.ERROR]\tWith stack trace : {}" + ANSI_RESET,
+                                    testMethodName,
+                                    entry.getStackTrace().get());
                         }
                     }
                 });
