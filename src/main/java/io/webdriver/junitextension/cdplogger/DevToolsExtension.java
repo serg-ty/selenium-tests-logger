@@ -36,17 +36,15 @@ import java.util.function.Consumer;
  * To filter responses by some URL match pattern there is need to add a {@code 'responseURLFilter'}
  * field in a test class. This can be done with static field, e.g.
  * {@code final static String responseURLFilter = "your.application.url.part";}.
- *
- * <p>Each method that adds a Network or Log listeners can be overriden in a subclass.
  */
 public class DevToolsExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
     protected final static Logger logger = LoggerFactory.getLogger(DevToolsExtension.class);
-    private static final String ANSI_GREEN = "\u001B[32m";
-    private static final String ANSI_RESET = "\u001B[0m";
-    private DevTools devTools;
-    private String testMethodName;
-    private String responseURLFilter;
+    protected static final String ANSI_GREEN = "\u001B[32m";
+    protected static final String ANSI_RESET = "\u001B[0m";
+    protected DevTools devTools;
+    protected String testMethodName;
+    protected String responseURLFilter;
 
     protected DevToolsExtension() {
 
@@ -65,8 +63,8 @@ public class DevToolsExtension implements BeforeTestExecutionCallback, AfterTest
                 this.devTools = driver.getDevTools();
 
             } else {
-                throw new IllegalArgumentException("Unsupported version of WebDriver is provided. "
-                        + "\nThe only supported versions to work with Chrome Dev Tools protocol are: ChromeDriver and EdgeDriver.");
+                throw new IllegalArgumentException("Unsupported type of WebDriver is provided. "
+                        + "\nChrome Dev Tools supports either ChromeDriver or EdgeDriver.");
             }
         } catch (NoSuchFieldException e) {
             throw new NoSuchFieldException(String.format("There is no 'driver' field in test class '%s'. "
